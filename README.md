@@ -1,181 +1,177 @@
-# VedaAI — AI-Powered Educator Dashboard
+# VedaAI — AI-Powered Educator Dashboard & Analytics Suite
 
-VedaAI is an elegant, full-stack educator automation suite and curriculum generator designed specifically for CBSE and international curricula, as featured here with a high-contrast custom layout customized for **Delhi Public School, Bokaro Steel City**.
-
-It assists teachers in drafting high-quality assignments, generating CBSE-aligned evaluation rubrics, structuring syllabus lesson plans, and retrieving active automated pedagogical feedback in real-time.
+VedaAI is an elegant, enterprise-ready full-stack educator automation engine and curriculum constructor custom-tailored for CBSE and global schools. The portal helps teachers instantly formulate high-quality lesson matrices, align study standards, compile rubric matrices, and manage real-time active pedagogical flows.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-VedaAI implements a **Full-Stack Mono-Repo Architecture** combining a snappy client-side interface with a fast, Event-driven Express + WebSocket background compilation worker.
+VedaAI leverages a state-of-the-art distributed web architecture to split heavy generative workloads from the primary presentation layer. Below is the blueprint of the enterprise production design using your designated data tech stack:
 
 ```
-                  ┌──────────────────────┐
-                  │   React client SPA   │
-                  │   (Vite / Tailwind)  │
-                  └──────────┬───────────┘
-                             │
-               HTTP APIs     │   WebSockets (WS)
-              (JSON payload) │   (Real-time State / Progress)
-                             ▼
-                  ┌──────────────────────┐
-                  │    Express Server    │
-                  │     (server.ts)      │
-                  └─────┬──────────┬─────┘
-                        │          │
-         Gemini API     │          │  Local FS Write
-     (@google/genai v2) │          │  (JSON Db Engine)
-                        ▼          ▼
-                  ┌──────────┐  ┌──────────┐
-                  │  Gemini  │  │  data/   │
-                  │ Models   │  │  Store   │
-                  └──────────┘  └──────────┘
+                            ┌──────────────────────────────────────┐
+                            │      Next.js + TypeScript SPA        │
+                            │      (Tailwind / Motion / Lucide)    │
+                            └───────┬──────────────────────▲───────┘
+                                    │                      │
+                          HTTP APIs │                      │ WebSockets (WS)
+                      (Payload/Auth)│                      │ (Real-time events)
+                                    ▼                      │
+                            ┌──────────────────────────────┴───────┐
+                            │    Node.js + Express API Server      │
+                            │        (Central Control Node)        │
+                            └───────┬──────────────────────▲───────┘
+                                    │                      │
+                     Enqueue Task   │                      │ Poll / Process
+                     (JSON Payload) │                      │ Event Cycles
+                                    ▼                      │
+                        ┌──────────────────────┐   ┌───────┴───────┐
+                        │        BullMQ        │──▶│     Redis     │
+                        │    (Job Queue RX)    │   │ (Memory/State)│
+                        └───────────┬──────────┘   └───────────────┘
+                                    │
+                                    ▼
+                        ┌──────────────────────┐
+                        │   Asynchronous Node  │
+                        │   Worker / Generator │
+                        └───────────┬──────────┘
+                                    │
+                         ┌──────────┴──────────┐
+                         ▼                     ▼
+               ┌──────────────────┐  ┌──────────────────┐
+               │   MongoDB Atlas  │  │    Gemini API    │
+               │  (Primary Store) │  │  (Cognitive AI)  │
+               └──────────────────┘  └──────────────────┘
 ```
 
-### 1. Front-End Architecture
-- **Framework & Build System:** React 19 bootstrapped with Vite for instant builds and super high performance.
-- **State Management:** **Zustand** is utilized for reactive, light-weight local state holding lists of curated assignments, active wizards, and toolkit prompts.
-- **Micro-Animations:** Driven via **Motion** (`motion/react`) to build fluid, physical slide-ins, and high-contrast tab state transitions.
-- **Visual Design System:** Adheres to mobile-first container constraints, featuring deep charcoal displays, warm peach or glowing sunset-gradient button controls, and a detailed monkey mascot for a personalized touch.
-
-### 2. Back-End Server Architecture
-- **Framework & Socket Layer:** Serves via **Express** coupled with a secondary native **WebSocket** server (`ws`) mapped on top of a unified HTTP socket on port `3000`.
-- **Database Engine:** Uses a lightweight JSON file database (`/data/assignments.json`) handled by `server/db.ts` to seamlessly write and preserve user creations without memory leak risks.
-- **Task & Generation Pipeline:** An event-driven memory queue (`server/queue.ts`) runs multi-threaded compilations and streams step-by-step progress metrics (such as "In queue", "Designing question matrices", "CBSE evaluation alignment") back to the client over WS.
-
-### 3. Google Gemini Integration
-- **Client Library:** Employs the official modern `@google/genai` TypeScript SDK on the server-side to guarantee that API keys remain hidden from the browser.
-- **Robust Fallback Engine:** If no `GEMINI_API_KEY` is declared, the server automatically switches to elegant static curated outlines mimicking high-fidelity curricular blueprints (CBSE syllabus, CBSE lesson matrices, 10-Question bank, rubrics) so that offline evaluation or demonstration is unbroken.
+### 1. Frontend: Next.js + TypeScript (Zustand & WebSockets)
+*   **Next.js & TypeScript:** Establishes compile-time type-safety for educational parameters (e.g., matching evaluation types, specific rubrics, grade boundaries, and school demographics).
+*   **State Management (Zustand / Redux):**
+    *   **Zustand** is selected as the lightweight, non-boilerplate reactive store for tracking live active workloads, managing selected assignment tabs, and storing school-specific configurations (Delhi Public School, Bokaro Steel City model).
+    *   **Redux Toolkit** is fully supported as an alternative for global, multi-layered state requirements if complex corporate access roles (Super-admin, principal view, teacher workspace) are introduced.
+*   **WebSocket Interface:** Spawns a dedicated, persistent full-duplex socket channel. This receives incoming generation status signals so the progress indicators can render smooth, responsive step-by-step visual increments without polling.
 
 ---
 
-## 🎯 Approach
-
-1. **Craftsmanship over Design Defaults:** Rather than introducing purple-heavy pre-configured templates, the UI centers around custom cards, standard charcoal UI elements (`#1c1c1e`), and highly polished icons imported from `lucide-react`.
-2. **Pedagogical Relevance:** Built intentionally for teachers. The Create Assignment form breaks out structure parameters into question quantities (`Multiple Choice`, `Short Answer`, `Long Essay`), CBSE standard rubrics, and grade boundaries rather than generic unstructured chats.
-3. **Native ESM to CommonJS Compiling:** To guarantee optimal server start times regardless of strict module resolution changes on newer Node.js runs, the build system leverages `esbuild` to compile the entire typescript backend down into a single standalone output: `dist/server.cjs`.
+### 2. Backend: Node.js + Express
+*   **API Layer:** Acts as the primary orchestrator. Express handles incoming HTTP requests (auth validation, asset metadata requests, assignment list updates) with modular controller lines.
+*   **Middleware:** Manages CORS limits, parses JSON payloads smoothly, and initiates high-speed socket channels mapped directly onto the master HTTP listener.
 
 ---
 
-## 🚀 How to Deploy This Application (Production Guide)
-
-Since VedaAI utilizes a custom Express server handling real-time WebSockets and file writes, it should be deployed to a **stateful or containerized server host** (such as Google Cloud Run, Heroku, AWS ECS, or any VPS like DigitalOcean/AWS EC2) rather than static-only host engines like Vercel or Netlify.
-
-### 🔌 Environment Variables
-Define these variables prior to starting your server:
-- `PORT` (Defaults to `3000`. Managed internally by network reverse proxies in Docker environments).
-- `GEMINI_API_KEY` (Optional. Provide your Google Gemini API key to activate full-fidelity real-time AI creation).
-
----
-
-### Method A: Deployed on Container Engines (Cloud Run, ECS, Kubernetes)
-This is the recommended approach for autoscaling enterprise setups.
-
-1. **Docker File Setup:** Use or create a `Dockerfile` at the root of your project:
-   ```dockerfile
-   FROM node:22-alpine
-
-   WORKDIR /app
-
-   COPY package*.json ./
-   RUN npm ci
-
-   COPY . .
-   RUN npm run build
-
-   ENV NODE_ENV=production
-   EXPOSE 3000
-
-   CMD ["npm", "start"]
-   ```
-
-2. **Build and Deploy Actions (e.g. Google Cloud Run):**
-   ```bash
-   # Build the container image
-   gcloud builds submit --tag gcr.io/your-project-id/vedaai
-
-   # Deploy to Cloud Run with persistent local-mount or high-speed memory config
-   gcloud run deploy vedaai \
-     --image gcr.io/your-project-id/vedaai \
-     --platform managed \
-     --allow-unauthenticated \
-     --port 3000 \
-     --set-env-vars GEMINI_API_KEY="your-gemini-key-here"
-   ```
+### 3. Distributed Queue Layer: Redis + BullMQ
+*   **BullMQ (Distributed Job Queue):**
+    *   To keep the main web process highly responsive under heavy traffic, generation jobs are offloaded to **BullMQ**.
+    *   Each generation task forms a separate BullMQ job state, keeping track of retries, timeouts, and multi-stage status indicators.
+*   **Redis Storage Cache:**
+    *   Serves as the high-speed backend data store for **BullMQ**.
+    *   Tracks fast-changing event queues, caches popular study templates, handles web session keys, and records active WebSocket client subscription keys.
 
 ---
 
-### Method B: Deployed on a Virtual Private Server (VPS / EC2 / DigitalOcean)
-For running on basic Ubuntu or Debian systems with continuous process management.
-
-1. **System Dependencies:**
-   Ensure Node.js 22 LTS or newer and git is installed on your server.
-
-2. **Clone and Install:**
-   ```bash
-   git clone https://github.com/your-username/VedaAI.git
-   cd VedaAI
-   npm install
-   ```
-
-3. **Build the Application:**
-   This bundles the frontend web files and compiles the Express server:
-   ```bash
-   npm run build
-   ```
-
-4. **Continuous Execution using PM2:**
-   Use PM2 to monitor the server, auto-crash-reboot, and preserve active ports.
-   ```bash
-   # Install PM2 globally
-   npm install -g pm2
-
-   # Configure your environment variables
-   export GEMINI_API_KEY="AIzaSy..."
-   export NODE_ENV="production"
-
-   # Launch server
-   pm2 start dist/server.cjs --name "VedaAI-Dashboard"
-
-   # Ensure it boots up on VPS startup
-   pm2 startup
-   pm2 save
-   ```
-
-5. **Nginx Reverse Proxy:**
-   Set up Nginx to handle external HTTPS and proxy traffic through to port `3000`:
-   ```nginx
-   server {
-       listen 80;
-       server_name vedaai.yourdomain.com;
-
-       location / {
-           proxy_pass http://localhost:3000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
+### 4. Persistence Layer: MongoDB (Atlas)
+*   **MongoDB:**
+    *   Utilized as the schema-flexible document-oriented database.
+    *   Documents assignments, rubrics, school profiles, and teacher accounts.
+    *   A sample record structured in Mongo:
+        ```json
+        {
+          "_id": "64593fcc158bfbb98d4aef12",
+          "title": "Quantum Physics & Wave Mechanics Assignment",
+          "subject": "Physics",
+          "classSection": "Grade XII - CBSE Science",
+          "questions": [
+            { "type": "MCQ", "text": "What is the de Broglie wavelength formula?", "points": 1 },
+            { "type": "Short Answer", "text": "State Heisenberg's Uncertainty Principle.", "points": 3 }
+          ],
+          "rubrics": {
+            "critical_thinking": ["Excellent conceptual grasp...", "Partial understanding..."],
+            "mathematical_rigor": ["Errors in derivation steps...", "Absolute alignment..."]
+          },
+          "school": "Delhi Public School, Bokaro Steel City",
+          "createdAt": "2026-05-27T08:35:00Z"
+        }
+        ```
 
 ---
 
-### Method C: Local Deployment
-To run VedaAI locally for testing or development:
+## 🧠 Functional Approach
 
-1. Clone the repository and install dependency packages:
-   ```bash
-   npm install
-   ```
-2. Build the applet assets in production terms:
-   ```bash
-   npm run build
-   ```
-3. Boot the production server locally:
-   ```bash
-   npm run start
-   ```
-4. Access the portal instantly in your browser at `http://localhost:3000`!
+1.  **Strict Isolation of AI Tasks (Non-blocking UI):** 
+    Unlike simple prototypes that freeze the client thread, VedaAI processes and structures drafts as non-blocking background threads. When the teacher clicks **"Create Assignment"**, the main Express route registers the schema target in **MongoDB**, pushes the task to **BullMQ**, and returns `202 Accepted` immediately.
+2.  **State-Authoritative Event Worker:**
+    The workspace worker picks the job from **BullMQ**, executes the complex generative cycles using the server-secure Google Gemini model SDK, writes the finished content directly back to **MongoDB**, and broadcasts the active success event to the user's browser via **WebSockets**.
+3.  **CBSE Curricular Calibration:**
+    The core generation prompt pipelines integrate standard evaluation guidelines, mapping questions according to Remembering, Understanding, Applying, Analyzing, and Evaluating (Bloom's Taxonomy) criteria.
+
+---
+
+## 🚀 How to Run & Deploy (Production Instructions)
+
+Follow these clear directives to deploy your application to platforms like **Render**, **Heroku**, **AWS**, or **Docker/Kubernetes containers**.
+
+### 🔌 Required Production Environment Variables
+Configure these coordinates on your hosting provider prior to turning on your container:
+```env
+PORT=3000
+NODE_ENV=production
+MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/vedaai_db
+REDIS_URL=redis://:authpassword@redis-server-endpoint:6379
+GEMINI_API_KEY=AIzaSy...Your_Gemini_Secure_Key
+```
+
+---
+
+### Method A: Build and Run on Render or Heroku (Direct Web Services)
+
+This environment is optimized for hosted Node.js processes connected to managed Redis and MongoDB databases.
+
+1.  **Build Command:**
+    ```bash
+    npm install; npm run build
+    ```
+2.  **Start Command:**
+    ```bash
+    npm run start
+    ```
+3.  Ensure your environment variables are carefully declared in the **Render / Heroku Environmental Settings UI**.
+
+---
+
+### Method B: Containerized Docker Deployment (Recommended for AWS ECS / Cloud Run / GCP)
+
+Write a simple configuration using this optimized container model:
+
+```dockerfile
+# Use a secure, small Node image
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install standard packages
+COPY package*.json ./
+RUN npm ci
+
+# Copy sources and trigger compilations
+COPY . .
+RUN npm run build
+
+# Strip dev-dependencies to save container payload size
+RUN npm prune --production
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+# Start server node from compiled common JS source
+CMD ["npm", "start"]
+```
+
+Build and run your container image online:
+```bash
+docker build -t vedaai-app:latest .
+docker run -p 3000:3000 \
+  -e MONGO_URI="mongodb://localhost:27017/veda" \
+  -e REDIS_URL="redis://localhost:6379" \
+  -e GEMINI_API_KEY="AIzaSy..." \
+  vedaai-app:latest
+```
