@@ -1,0 +1,6 @@
+{
+  "name": "AI Assessment Creator",
+  "description": "An AI-powered assessment creator that lets teachers generate clean, structured exam question papers with real-time generation updates and fully formatted PDF downloads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
